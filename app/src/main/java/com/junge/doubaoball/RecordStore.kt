@@ -12,7 +12,7 @@ import java.util.Locale
  * 操作记录存储（本地JSON文件）
  * 支持：自动增加、查询全部、删除单条、清空、给记录加备注
  */
-class RecordStore(private val context: Context) {
+class RecordStore(context: Context) {
 
     data class Record(
         val id: Long,

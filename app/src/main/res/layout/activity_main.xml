@@ -258,59 +258,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ═══ 校准工具卡 ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/card_bg"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    style="@style/CardTitle"
-                    android:text="校准工具（点不准时用）" />
-
-                <TextView
-                    android:id="@+id/tvHelpCalibrate"
-                    style="@style/HelpDot" />
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingMultiplier="1.4"
-                android:text="正常情况下完全不用管这里。打电话走桌面快捷方式直达，很稳定。万一通话界面里的「暂停/挂断」键认不出了，点下面按钮自动校准。"
-                android:textColor="#9BA3B4"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/btnDumpNodes"
-                style="@style/GoldBtn"
-                android:layout_marginTop="10dp"
-                android:text="一键自动校准（全自动）" />
-
-            <LinearLayout
-                android:id="@+id/layoutNodes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical" />
-
-            <Button
-                android:id="@+id/btnClearCalib"
-                style="@style/GhostBtn"
-                android:layout_marginTop="8dp"
-                android:text="恢复自动识别（清除校准）" />
-        </LinearLayout>
-
         <!-- ═══ 操作记录卡 ═══ -->
         <LinearLayout
             android:layout_width="match_parent"

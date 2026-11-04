@@ -10,10 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
-import android.view.Gravity
-import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -33,10 +30,9 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
     private val helpMap = mapOf(
         "state" to ("当前状态" to "悬浮球现在处于什么阶段：\n· 待机：球在等你点它\n· 正在唤醒：正在帮你打开豆包\n· 通话中：豆包语音通话正在进行\n· 已暂停：通话被按了暂停"),
         "permission" to ("为什么要开权限" to "悬浮窗权限＝允许小球显示在其他App上面；\n无障碍权限＝允许小球「替你用手指点屏幕」，这样它才能帮你按下豆包里的语音按钮。本程序只操作豆包，不读取你的隐私内容。"),
-        "single" to ("单击唤醒" to "手指轻点一下小球。它会：①自动打开豆包App ②自动找到并按下「语音通话」按钮。你只需要张嘴说话就行。"),
+        "single" to ("单击唤醒" to "手指轻点一下小球。它会：①自动回到桌面 ②长按豆包图标 ③点弹出的「打电话」，直达语音通话。你只需张嘴说话。\n前提：豆包图标在桌面当前这一屏（别放进文件夹）。"),
         "pause" to ("暂停/继续" to "通话中轻点一下小球＝按下豆包里的静音/暂停键，豆包就听不到你了；再点一下恢复。适合旁边有人说话时临时用。"),
         "double" to ("双击挂断" to "快速连续点两下小球＝挂断语音通话并退出，小球回到待机状态。"),
-        "calibrate" to ("校准工具" to "豆包升级后界面可能变化，小球如果找不到按钮，就用这个工具「手把手」告诉它按钮长什么样：打开豆包→回来点读取→在列表里认出那个按钮→设为对应的键。一次校准长期有效。"),
         "record" to ("操作记录" to "小球每次帮你做了什么都记在这里：什么时候唤醒了豆包、暂停了几次、有没有失败。点一条可以加备注，长按可删除。"),
         "api" to ("对外接口" to "这是留给其他程序的「遥控器」：别的App发一句暗号（广播），就能让小球发起通话、挂断或显示隐藏。普通用户不用管这里。")
     )
@@ -53,7 +49,6 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         setupPermissionButtons()
         setupBallControls()
         setupHelpDots()
-        setupCalibrate()
         setupRecords()
 
         // 自动检查更新：静默进行，有新版本才弹窗
@@ -183,7 +178,7 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         val bind = mapOf(
             b.tvHelpState to "state", b.tvHelpPermission to "permission",
             b.tvHelpSingle to "single", b.tvHelpPause to "pause",
-            b.tvHelpDouble to "double", b.tvHelpCalibrate to "calibrate",
+            b.tvHelpDouble to "double",
             b.tvHelpRecord to "record", b.tvHelpApi to "api"
         )
         bind.forEach { (view, key) ->
@@ -194,97 +189,6 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
                     .setPositiveButton("懂了", null).show()
             }
         }
-    }
-
-    // ─── 校准工具（全自动） ───
-    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
-
-    private fun setupCalibrate() {
-        // 一键自动校准：自动打开豆包 → 自动认出语音键 → 自动记住，用户什么都不用懂
-        b.btnDumpNodes.setOnClickListener {
-            val svc = DoubaoA11yService.instance
-            if (svc == null) {
-                Toast.makeText(this, "请先开启无障碍权限", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (!svc.launchDoubao(this)) return@setOnClickListener
-            Toast.makeText(this, "豆包打开中…3秒后自动识别语音按钮，请稍候别动手机", Toast.LENGTH_LONG).show()
-            mainHandler.postDelayed({
-                val found = svc.autoCalibrateCallNode()
-                if (found != null) {
-                    AlertDialog.Builder(this)
-                        .setTitle("校准完成")
-                        .setMessage("已自动认出并记住语音按钮：「$found」\n\n以后单击悬浮球就能直接通话，不用再校准。")
-                        .setPositiveButton("好", null).show()
-                } else {
-                    // 自动认不出才展示手动列表兜底
-                    showManualNodeList(svc)
-                    Toast.makeText(this, "没自动认出来，请在下面列表里认出它", Toast.LENGTH_LONG).show()
-                }
-            }, 2800)
-        }
-
-        b.btnClearCalib.setOnClickListener {
-            prefs.clearCalibration()
-            Toast.makeText(this, "已恢复自动识别", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /** 手动兜底：列出当前屏幕上的按钮供用户认领（正常情况用不到） */
-    private fun showManualNodeList(svc: DoubaoA11yService) {
-        val nodes = svc.dumpClickableNodes()
-        b.layoutNodes.removeAllViews()
-        if (nodes.isEmpty()) {
-            b.layoutNodes.addView(TextView(this).apply {
-                text = "没读到按钮。请确认豆包正显示在屏幕上。"
-                setTextColor(Color.parseColor("#F87171"))
-                textSize = 13f
-            })
-            return
-        }
-        nodes.forEach { desc -> addNodeRow(desc) }
-    }
-
-    /** 校准列表的一行：节点描述 + 三个设置按钮 */
-    private fun addNodeRow(desc: String) {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 10, 0, 10)
-        }
-        row.addView(TextView(this).apply {
-            text = desc
-            setTextColor(Color.parseColor("#F5F0E1"))
-            textSize = 13f
-        })
-        val btns = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        listOf("设为语音键" to 1, "设为暂停键" to 2, "设为挂断键" to 3).forEach { (label, type) ->
-            btns.addView(Button(this, null, 0, com.google.android.material.R.style.Widget_Material3_Button_TextButton).apply {
-                text = label
-                textSize = 12f
-                setTextColor(Color.parseColor("#FFD76A"))
-                setOnClickListener {
-                    saveCalibration(desc, type)
-                }
-            })
-        }
-        row.addView(btns)
-        b.layoutNodes.addView(row)
-    }
-
-    /** 把用户选中的节点描述解析为特征保存：格式 text|desc */
-    private fun saveCalibration(desc: String, type: Int) {
-        // desc形如：「文字」描:描述 位:(x,y)
-        val text = desc.substringAfter("「").substringBefore("」")
-        val content = desc.substringAfter("描:").substringBefore(" 位:")
-        val feature = "$text|$content"
-        when (type) {
-            1 -> prefs.customCallNode = feature
-            2 -> prefs.customPauseNode = feature
-            3 -> prefs.customEndNode = feature
-        }
-        val name = when (type) { 1 -> "语音键"; 2 -> "暂停键"; else -> "挂断键" }
-        Toast.makeText(this, "已记住${name}：$text", Toast.LENGTH_LONG).show()
-        store.add("校准工具·设定$name", "成功")
     }
 
     // ─── 操作记录 ───

@@ -10,11 +10,8 @@ package com.junge.doubaoball
  */
 object StateCenter {
 
-    enum class State(val label: String) {
-        IDLE("待机"),
-        LAUNCHING("正在唤醒豆包"),
-        IN_CALL("语音通话中"),
-        PAUSED("已暂停")
+    enum class State {
+        IDLE, LAUNCHING, IN_CALL, PAUSED
     }
 
     @Volatile
