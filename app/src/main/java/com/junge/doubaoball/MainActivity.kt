@@ -33,8 +33,7 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         "single" to ("单击唤醒" to "手指轻点一下小球。它会：①自动回到桌面 ②长按豆包图标 ③点弹出的「打电话」，直达语音通话。你只需张嘴说话。\n前提：豆包图标在桌面当前这一屏（别放进文件夹）。"),
         "pause" to ("暂停/继续" to "通话中轻点一下小球＝按下豆包里的静音/暂停键，豆包就听不到你了；再点一下恢复。适合旁边有人说话时临时用。"),
         "double" to ("双击挂断" to "快速连续点两下小球＝挂断语音通话并退出，小球回到待机状态。"),
-        "record" to ("操作记录" to "小球每次帮你做了什么都记在这里：什么时候唤醒了豆包、暂停了几次、有没有失败。点一条可以加备注，长按可删除。"),
-        "api" to ("对外接口" to "这是留给其他程序的「遥控器」：别的App发一句暗号（广播），就能让小球发起通话、挂断或显示隐藏。普通用户不用管这里。")
+        "record" to ("操作记录" to "小球每次帮你做了什么都记在这里：什么时候唤醒了豆包、暂停了几次、有没有失败。点一条可以加备注，长按可删除。")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -179,7 +178,7 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
             b.tvHelpState to "state", b.tvHelpPermission to "permission",
             b.tvHelpSingle to "single", b.tvHelpPause to "pause",
             b.tvHelpDouble to "double",
-            b.tvHelpRecord to "record", b.tvHelpApi to "api"
+            b.tvHelpRecord to "record"
         )
         bind.forEach { (view, key) ->
             view.setOnClickListener {

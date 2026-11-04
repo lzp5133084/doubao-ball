@@ -296,50 +296,5 @@
                 android:layout_marginTop="8dp"
                 android:text="清空记录" />
         </LinearLayout>
-
-        <!-- ═══ 接口说明卡（预留接口） ═══ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/card_bg"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    style="@style/CardTitle"
-                    android:text="对外接口（供其他程序调用）" />
-
-                <TextView
-                    android:id="@+id/tvHelpApi"
-                    style="@style/HelpDot" />
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:fontFamily="monospace"
-                android:lineSpacingMultiplier="1.5"
-                android:text="com.junge.doubaoball.ACTION_CALL_START  发起通话\ncom.junge.doubaoball.ACTION_CALL_END    挂断通话\ncom.junge.doubaoball.ACTION_CALL_TOGGLE 暂停/继续\ncom.junge.doubaoball.ACTION_BALL_SHOW   显示球\ncom.junge.doubaoball.ACTION_BALL_HIDE   隐藏球"
-                android:textColor="#7DD3FC"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="10dp"
-            android:gravity="center"
-            android:text="作者：军哥懂保 · 微信 xunijiayuan"
-            android:textColor="#5B6373"
-            android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>
