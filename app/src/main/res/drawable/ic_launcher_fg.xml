@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 金环 -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M54,26 m-24,0 a24,24 0 1,1 48,0 a24,24 0 1,1 -48,0" />
+    <path
+        android:fillColor="#0A0E14"
+        android:pathData="M54,28 m-20,0 a20,20 0 1,1 40,0 a20,20 0 1,1 -40,0" />
+    <!-- 中心声波三道 -->
+    <path
+        android:fillColor="#FFD76A"
+        android:pathData="M46,44 h4 v20 h-4 z" />
+    <path
+        android:fillColor="#FFD76A"
+        android:pathData="M52,38 h4 v32 h-4 z" />
+    <path
+        android:fillColor="#FFD76A"
+        android:pathData="M58,46 h4 v16 h-4 z" />
+</vector>

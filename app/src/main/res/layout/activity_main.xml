@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0E14"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- ═══ 顶部信息卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/card_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="豆包悬浮球"
+                android:textColor="#FFD76A"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAppInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:lineSpacingMultiplier="1.3"
+                android:textColor="#9BA3B4"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- ═══ 当前状态卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <View
+                android:id="@+id/viewStatusLight"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:background="@drawable/status_light" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="待机中"
+                android:textColor="#F5F0E1"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvHelpState"
+                style="@style/HelpDot" />
+        </LinearLayout>
+
+        <!-- ═══ 权限卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="第一步 · 开启两个权限" />
+
+                <TextView
+                    android:id="@+id/tvHelpPermission"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvOverlayPerm"
+                    style="@style/PermLabel"
+                    android:text="悬浮窗权限" />
+
+                <Button
+                    android:id="@+id/btnOverlayPerm"
+                    style="@style/GoldBtnSmall"
+                    android:text="去开启" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvA11yPerm"
+                    style="@style/PermLabel"
+                    android:text="无障碍权限" />
+
+                <Button
+                    android:id="@+id/btnA11yPerm"
+                    style="@style/GoldBtnSmall"
+                    android:text="去开启" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingMultiplier="1.4"
+                android:text="提示：无障碍权限页面里找「豆包悬浮球助手」，打开开关并允许。两个灯都变绿，外壳才能工作。"
+                android:textColor="#9BA3B4"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ═══ 悬浮球控制卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="第二步 · 召唤悬浮球" />
+
+            <Button
+                android:id="@+id/btnToggleBall"
+                style="@style/GoldBtn"
+                android:layout_marginTop="12dp"
+                android:text="显示悬浮球" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="悬浮球大小"
+                android:textColor="#F5F0E1"
+                android:textSize="14sp" />
+
+            <SeekBar
+                android:id="@+id/seekSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:max="60"
+                android:progress="22" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/swDoubleHide"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="待机时双击可隐藏悬浮球"
+                android:textColor="#F5F0E1" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/swBackHome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="挂断后自动回到桌面"
+                android:textColor="#F5F0E1" />
+        </LinearLayout>
+
+        <!-- ═══ 手势说明卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/CardTitle"
+                android:text="手势说明书" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GestureText"
+                    android:layout_weight="1"
+                    android:text="单击球 → 豆包自动打开并进入语音通话" />
+
+                <TextView
+                    android:id="@+id/tvHelpSingle"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GestureText"
+                    android:layout_weight="1"
+                    android:text="通话中单击 → 暂停 / 再点继续" />
+
+                <TextView
+                    android:id="@+id/tvHelpPause"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/GestureText"
+                    android:layout_weight="1"
+                    android:text="双击球 → 挂断关闭，回到待机" />
+
+                <TextView
+                    android:id="@+id/tvHelpDouble"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ 校准工具卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="校准工具（点不准时用）" />
+
+                <TextView
+                    android:id="@+id/tvHelpCalibrate"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:lineSpacingMultiplier="1.4"
+                android:text="用法：先手动打开豆包，停在有「语音通话」按钮的界面 → 回到本页点下方按钮 → 在列表里找到那个按钮，把它设为「语音键」。"
+                android:textColor="#9BA3B4"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnDumpNodes"
+                style="@style/GoldBtn"
+                android:layout_marginTop="10dp"
+                android:text="读取当前屏幕上的按钮" />
+
+            <LinearLayout
+                android:id="@+id/layoutNodes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/btnClearCalib"
+                style="@style/GhostBtn"
+                android:layout_marginTop="8dp"
+                android:text="恢复自动识别（清除校准）" />
+        </LinearLayout>
+
+        <!-- ═══ 操作记录卡 ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvRecordTitle"
+                    style="@style/CardTitle"
+                    android:text="操作记录" />
+
+                <TextView
+                    android:id="@+id/tvHelpRecord"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutRecords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical" />
+
+            <Button
+                android:id="@+id/btnClearRecords"
+                style="@style/GhostBtn"
+                android:layout_marginTop="8dp"
+                android:text="清空记录" />
+        </LinearLayout>
+
+        <!-- ═══ 接口说明卡（预留接口） ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="对外接口（供其他程序调用）" />
+
+                <TextView
+                    android:id="@+id/tvHelpApi"
+                    style="@style/HelpDot" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:lineSpacingMultiplier="1.5"
+                android:text="com.junge.doubaoball.ACTION_CALL_START  发起通话\ncom.junge.doubaoball.ACTION_CALL_END    挂断通话\ncom.junge.doubaoball.ACTION_CALL_TOGGLE 暂停/继续\ncom.junge.doubaoball.ACTION_BALL_SHOW   显示球\ncom.junge.doubaoball.ACTION_BALL_HIDE   隐藏球"
+                android:textColor="#7DD3FC"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="10dp"
+            android:gravity="center"
+            android:text="作者：军哥懂保 · 微信 xunijiayuan"
+            android:textColor="#5B6373"
+            android:textSize="11sp" />
+    </LinearLayout>
+</ScrollView>

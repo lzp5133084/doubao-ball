@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_desc">豆包悬浮球助手：用于在你点击悬浮球后，自动打开豆包并点下语音通话按钮；通话中帮你暂停、继续和挂断。仅操作豆包App，不读取其他内容。</string>
+</resources>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="豆包悬浮球"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DoubaoBall"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 悬浮球前台服务 -->
+        <service
+            android:name=".FloatingBallService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- 无障碍服务：负责识别并点击豆包界面按钮 -->
+        <service
+            android:name=".DoubaoA11yService"
+            android:exported="true"
+            android:label="豆包悬浮球助手"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- 对外接口广播（预留接口：其他程序可发送这些广播来控制悬浮球） -->
+        <receiver
+            android:name=".InterfaceReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.junge.doubaoball.ACTION_CALL_START" />
+                <action android:name="com.junge.doubaoball.ACTION_CALL_END" />
+                <action android:name="com.junge.doubaoball.ACTION_CALL_TOGGLE" />
+                <action android:name="com.junge.doubaoball.ACTION_BALL_SHOW" />
+                <action android:name="com.junge.doubaoball.ACTION_BALL_HIDE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
