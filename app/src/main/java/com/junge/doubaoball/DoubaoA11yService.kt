@@ -100,25 +100,29 @@ class DoubaoA11yService : AccessibilityService() {
         }
     }
 
-    /** 阶段0：在桌面上找"豆包"图标 → 长按 */
+    /** 阶段0：在桌面上找"豆包"图标 → 模拟手指按住图标900ms弹出快捷菜单 */
     private val findIconRunnable = Runnable {
         if (shortcutStage != 0 || StateCenter.state != StateCenter.State.LAUNCHING) return@Runnable
-        val root = rootInActiveWindow ?: return@Runnable retryFindIcon()
-        val icon = findNode(root, "豆包", "豆包")
+        val icon = findInAllWindows("豆包")
         if (icon == null) {
-            root.recycle()
             retryFindIcon()
         } else {
-            // 长按图标弹出快捷方式菜单
-            var target: AccessibilityNodeInfo? = icon
-            while (target != null && !target.isLongClickable) target = target.parent
-            val ok = (target ?: icon).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
-            root.recycle()
-            if (ok) {
-                shortcutStage = 1
-                launchRetry = 0
-            } else {
+            val rect = Rect()
+            icon.getBoundsInScreen(rect)
+            if (rect.width() <= 0) {
                 retryFindIcon()
+            } else {
+                // 真实手指长按（所有桌面都认），比系统的LONG_CLICK可靠
+                val ok = longPressAt(rect.centerX().toFloat(), rect.centerY().toFloat())
+                if (ok) {
+                    shortcutStage = 1
+                    launchRetry = 0
+                    // 菜单弹出需要动画时间，主动调度一次点击尝试
+                    handler.removeCallbacks(clickMenuRunnable)
+                    handler.postDelayed(clickMenuRunnable, 800)
+                } else {
+                    retryFindIcon()
+                }
             }
         }
     }
@@ -128,21 +132,18 @@ class DoubaoA11yService : AccessibilityService() {
         if (launchRetry <= 4) {
             handler.postDelayed(findIconRunnable, 800)
         } else {
-            finishLaunchFail("没找到桌面上的豆包图标", "请把豆包图标放到手机桌面当前屏，再单击悬浮球")
+            finishLaunchFail("没找到桌面上的豆包图标", "请确认豆包图标就在桌面当前这一屏（别放文件夹里）")
         }
     }
 
-    /** 阶段1：在快捷菜单里点"打电话" */
+    /** 阶段1：在弹出的快捷菜单里点"打电话"（菜单是独立窗口，必须遍历所有窗口找） */
     private val clickMenuRunnable = Runnable {
         if (shortcutStage != 1 || StateCenter.state != StateCenter.State.LAUNCHING) return@Runnable
-        val root = rootInActiveWindow ?: return@Runnable retryClickMenu()
-        val menu = findNode(root, "打电话", "打电话")
+        val menu = findInAllWindows("打电话")
         if (menu == null) {
-            root.recycle()
             retryClickMenu()
         } else {
             val ok = clickNode(menu)
-            root.recycle()
             if (ok) {
                 handler.removeCallbacks(shortcutTimeoutRunnable)
                 shortcutStage = -1
@@ -158,11 +159,34 @@ class DoubaoA11yService : AccessibilityService() {
 
     private fun retryClickMenu() {
         launchRetry++
-        if (launchRetry <= 3) {
-            handler.postDelayed(clickMenuRunnable, 600)
+        if (launchRetry <= 5) {
+            handler.postDelayed(clickMenuRunnable, 500)
         } else {
-            finishLaunchFail("没找到「打电话」选项", "长按菜单里没看到打电话，请截图告诉我菜单内容")
+            finishLaunchFail("菜单里没找到「打电话」", "长按后没认出打电话选项，请截图发我看看菜单")
         }
+    }
+
+    /**
+     * 在所有可见窗口里找文本/描述匹配的节点。
+     * 关键：快捷菜单、弹窗是独立窗口，只在主窗口里找会漏掉。
+     */
+    private fun findInAllWindows(keyword: String): AccessibilityNodeInfo? {
+        val wins = windows ?: return null
+        for (w in wins) {
+            val root = w.root ?: continue
+            val found = findNode(root, keyword, keyword)
+            if (found != null) return found
+        }
+        return null
+    }
+
+    /** 模拟手指在指定位置按住900毫秒（长按手势），用于弹出桌面图标的快捷菜单 */
+    private fun longPressAt(x: Float, y: Float): Boolean {
+        val path = Path().apply { moveTo(x, y) }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 900))
+            .build()
+        return dispatchGesture(gesture, null, null)
     }
 
     private fun finishLaunchFail(result: String, tip: String) {

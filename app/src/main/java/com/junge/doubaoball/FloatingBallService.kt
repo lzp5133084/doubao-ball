@@ -78,7 +78,15 @@ class FloatingBallService : Service(), StateCenter.Listener {
     }
 
     override fun onStateChanged(s: StateCenter.State) {
-        handler.post { ballView?.setState(s) }
+        handler.post {
+            if (s == StateCenter.State.LAUNCHING) {
+                // 执行自动化期间把球临时收起来，避免遮挡图标/菜单导致误点
+                removeBall()
+            } else {
+                showBall()
+                ballView?.setState(s)
+            }
+        }
     }
 
     private fun buildNotification(): Notification {
