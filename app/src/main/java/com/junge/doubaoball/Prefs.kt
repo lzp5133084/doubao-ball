@@ -55,6 +55,11 @@ class Prefs(context: Context) {
         get() = sp.getInt("total_calls", 0)
         set(v) = sp.edit().putInt("total_calls", v).apply()
 
+    /** 自动识别到的豆包包名（缓存，避免每次扫描） */
+    var doubaoPkg: String?
+        get() = sp.getString("doubao_pkg", null)
+        set(v) = sp.edit().putString("doubao_pkg", v).apply()
+
     fun clearCalibration() {
         sp.edit()
             .remove("custom_call_node")

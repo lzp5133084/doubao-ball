@@ -7,6 +7,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 安卓11+应用可见性声明：让外壳能"看见"手机里的豆包 -->
+    <queries>
+        <!-- 已知豆包系包名，直接声明 -->
+        <package android:name="com.larus.nova" />
+        <package android:name="com.larus.nova.lite" />
+        <!-- 可查询所有带启动图标的应用，用于按应用名"豆包"自动识别包名 -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

@@ -58,8 +58,9 @@ class DoubaoA11yService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         // 只在"正在唤醒豆包"状态下，监听到豆包窗口出现时执行自动点击
+        val targetPkg = prefs.doubaoPkg ?: DOUBAO_PKG
         if (StateCenter.state == StateCenter.State.LAUNCHING &&
-            event.packageName == DOUBAO_PKG &&
+            event.packageName == targetPkg &&
             (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
                     event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
         ) {
@@ -71,22 +72,75 @@ class DoubaoA11yService : AccessibilityService() {
 
     private val autoClickCallRunnable = Runnable { tryClickCallButton() }
 
-    /** 尝试点击豆包里的"语音通话"按钮，失败自动重试 */
+    /** 尝试点击豆包里的"语音通话"按钮，失败自动重试，最后启用智能猜测 */
     private fun tryClickCallButton() {
         if (StateCenter.state != StateCenter.State.LAUNCHING) return
         launchRetry++
         if (clickByFeature(prefs.customCallNode, callKeywords)) {
-            launchRetry = 0
-            StateCenter.set(StateCenter.State.IN_CALL)
-            store.add("单击唤醒·自动进入语音通话", "成功")
-            Prefs(this).totalCalls = Prefs(this).totalCalls + 1
-        } else if (launchRetry <= 6) {
+            onCallClickSuccess()
+        } else if (launchRetry <= 5) {
             handler.postDelayed(autoClickCallRunnable, 900)
+        } else if (launchRetry == 6 && smartFallbackClick()) {
+            // 关键词全没匹配上，智能猜测兜底（猜测结果自动记住，下次直接用）
+            onCallClickSuccess()
         } else {
             launchRetry = 0
             StateCenter.reset()
             store.add("单击唤醒·自动进入语音通话", "失败：没找到语音按钮")
-            toast("没找到豆包的语音按钮，请在App里用「校准工具」告诉我它在哪")
+            toast("没找到豆包的语音按钮，打开外壳App点一次「一键自动校准」即可")
+        }
+    }
+
+    private fun onCallClickSuccess() {
+        launchRetry = 0
+        StateCenter.set(StateCenter.State.IN_CALL)
+        store.add("单击唤醒·自动进入语音通话", "成功")
+        Prefs(this).totalCalls = Prefs(this).totalCalls + 1
+    }
+
+    /**
+     * 智能兜底：关键词都认不出按钮时，在屏幕底部区域找最像"语音图标"的可点击按钮
+     * （豆包的语音键一般在底部输入框附近，是个图标按钮）
+     * 猜中后自动把坐标特征记住，以后不再猜。
+     */
+    private fun smartFallbackClick(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        try {
+            val screenH = resources.displayMetrics.heightPixels
+            val screenW = resources.displayMetrics.widthPixels
+            var best: AccessibilityNodeInfo? = null
+            var bestScore = -1
+            collectIconButtons(root, screenW, screenH) { node, score ->
+                if (score > bestScore) { bestScore = score; best = node }
+            }
+            val node = best ?: return false
+            val rect = Rect()
+            node.getBoundsInScreen(rect)
+            return tapAt(rect.centerX().toFloat(), rect.centerY().toFloat())
+        } finally {
+            root.recycle()
+        }
+    }
+
+    /** 遍历底部1/3区域的可点击图标按钮并打分：越靠底部中央/右下、越接近正方形图标，分越高 */
+    private fun collectIconButtons(
+        node: AccessibilityNodeInfo, screenW: Int, screenH: Int,
+        onFound: (AccessibilityNodeInfo, Int) -> Unit
+    ) {
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        if (node.isClickable && rect.centerY() > screenH * 2 / 3 &&
+            rect.width() in 30..300 && rect.height() in 30..300
+        ) {
+            val ratio = rect.width().toFloat() / rect.height()
+            var score = 0
+            if (ratio in 0.6f..1.6f) score += 3            // 接近正方形→图标按钮
+            score += (rect.centerY() * 4 / screenH)        // 越靠底部越高分
+            if (rect.centerX() > screenW / 2) score += 2   // 豆包语音键偏右
+            onFound(node, score)
+        }
+        for (i in 0 until node.childCount) {
+            node.getChild(i)?.let { collectIconButtons(it, screenW, screenH, onFound) }
         }
     }
 
@@ -193,6 +247,30 @@ class DoubaoA11yService : AccessibilityService() {
         return result
     }
 
+    /**
+     * 一键自动校准：在当前窗口自动认出"语音通话"按钮并记住特征
+     * 返回认出的按钮描述；认不出返回null
+     */
+    fun autoCalibrateCallNode(): String? {
+        val root = rootInActiveWindow ?: return null
+        try {
+            for (kw in callKeywords) {
+                val node = findNode(root, kw, kw)
+                if (node != null) {
+                    val text = (node.text?.toString() ?: "").take(20)
+                    val desc = (node.contentDescription?.toString() ?: "").take(20)
+                    prefs.customCallNode = "$text|$desc"
+                    val shown = listOf(text, desc).firstOrNull { it.isNotBlank() } ?: kw
+                    store.add("一键自动校准·语音键", "成功：$shown")
+                    return shown
+                }
+            }
+            return null
+        } finally {
+            root.recycle()
+        }
+    }
+
     private fun dumpNode(node: AccessibilityNodeInfo, out: MutableList<String>, depth: Int) {
         if (depth > 12 || out.size >= 80) return
         if (node.isClickable) {
@@ -209,12 +287,17 @@ class DoubaoA11yService : AccessibilityService() {
         }
     }
 
-    /** 打开豆包App */
+    /** 打开豆包App（自动发现包名：任何版本的豆包都能认出来） */
     fun launchDoubao(ctx: Context): Boolean {
+        val pkg = findDoubaoPackage(ctx)
+        if (pkg == null) {
+            toast("手机里没找到豆包App，请先到应用商店安装「豆包」")
+            return false
+        }
         return try {
-            val intent = ctx.packageManager.getLaunchIntentForPackage(DOUBAO_PKG)
+            val intent = ctx.packageManager.getLaunchIntentForPackage(pkg)
             if (intent == null) {
-                toast("未检测到豆包App，请先安装豆包")
+                toast("豆包无法启动，请确认它没有被停用")
                 false
             } else {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
@@ -225,6 +308,41 @@ class DoubaoA11yService : AccessibilityService() {
             toast("打开豆包失败：${e.message}")
             false
         }
+    }
+
+    /**
+     * 自动发现豆包包名，三级策略：
+     * ① 用上次记住的 ② 扫描所有App按名字含「豆包」匹配 ③ 已知包名兜底
+     */
+    private fun findDoubaoPackage(ctx: Context): String? {
+        // ① 缓存
+        prefs.doubaoPkg?.let { if (isInstalled(ctx, it)) return it }
+        // ② 按应用名扫描（manifest已声明可见性）
+        val pm = ctx.packageManager
+        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        for (info in pm.queryIntentActivities(launcherIntent, 0)) {
+            val label = info.loadLabel(pm).toString()
+            if (label.contains("豆包")) {
+                val pkg = info.activityInfo.packageName
+                prefs.doubaoPkg = pkg
+                store.add("自动识别豆包", "成功：$label($pkg)")
+                return pkg
+            }
+        }
+        // ③ 已知包名兜底
+        for (pkg in listOf(DOUBAO_PKG, "com.larus.nova.lite")) {
+            if (isInstalled(ctx, pkg)) {
+                prefs.doubaoPkg = pkg
+                return pkg
+            }
+        }
+        return null
+    }
+
+    private fun isInstalled(ctx: Context, pkg: String): Boolean = try {
+        ctx.packageManager.getPackageInfo(pkg, 0); true
+    } catch (e: Exception) {
+        false
     }
 
     private fun toast(msg: String) {

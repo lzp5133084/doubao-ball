@@ -188,26 +188,32 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         }
     }
 
-    // ─── 校准工具 ───
+    // ─── 校准工具（全自动） ───
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     private fun setupCalibrate() {
+        // 一键自动校准：自动打开豆包 → 自动认出语音键 → 自动记住，用户什么都不用懂
         b.btnDumpNodes.setOnClickListener {
             val svc = DoubaoA11yService.instance
             if (svc == null) {
                 Toast.makeText(this, "请先开启无障碍权限", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val nodes = svc.dumpClickableNodes()
-            b.layoutNodes.removeAllViews()
-            if (nodes.isEmpty()) {
-                b.layoutNodes.addView(TextView(this).apply {
-                    text = "没读到按钮。请确认：豆包已打开在最前面的屏幕上。"
-                    setTextColor(Color.parseColor("#F87171"))
-                    textSize = 13f
-                })
-                return@setOnClickListener
-            }
-            nodes.forEach { desc -> addNodeRow(desc, svc) }
-            Toast.makeText(this, "找到${nodes.size}个按钮，认出目标后点对应设置", Toast.LENGTH_SHORT).show()
+            if (!svc.launchDoubao(this)) return@setOnClickListener
+            Toast.makeText(this, "豆包打开中…3秒后自动识别语音按钮，请稍候别动手机", Toast.LENGTH_LONG).show()
+            mainHandler.postDelayed({
+                val found = svc.autoCalibrateCallNode()
+                if (found != null) {
+                    AlertDialog.Builder(this)
+                        .setTitle("校准完成")
+                        .setMessage("已自动认出并记住语音按钮：「$found」\n\n以后单击悬浮球就能直接通话，不用再校准。")
+                        .setPositiveButton("好", null).show()
+                } else {
+                    // 自动认不出才展示手动列表兜底
+                    showManualNodeList(svc)
+                    Toast.makeText(this, "没自动认出来，请在下面列表里认出它", Toast.LENGTH_LONG).show()
+                }
+            }, 2800)
         }
 
         b.btnClearCalib.setOnClickListener {
@@ -216,8 +222,23 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         }
     }
 
+    /** 手动兜底：列出当前屏幕上的按钮供用户认领（正常情况用不到） */
+    private fun showManualNodeList(svc: DoubaoA11yService) {
+        val nodes = svc.dumpClickableNodes()
+        b.layoutNodes.removeAllViews()
+        if (nodes.isEmpty()) {
+            b.layoutNodes.addView(TextView(this).apply {
+                text = "没读到按钮。请确认豆包正显示在屏幕上。"
+                setTextColor(Color.parseColor("#F87171"))
+                textSize = 13f
+            })
+            return
+        }
+        nodes.forEach { desc -> addNodeRow(desc) }
+    }
+
     /** 校准列表的一行：节点描述 + 三个设置按钮 */
-    private fun addNodeRow(desc: String, svc: DoubaoA11yService) {
+    private fun addNodeRow(desc: String) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 10, 0, 10)
