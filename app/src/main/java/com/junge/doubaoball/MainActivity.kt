@@ -55,6 +55,14 @@ class MainActivity : AppCompatActivity(), StateCenter.Listener {
         setupHelpDots()
         setupCalibrate()
         setupRecords()
+
+        // 自动检查更新：静默进行，有新版本才弹窗
+        UpdateChecker.check(this)
+        // 点顶部信息区可手动检查更新
+        b.tvAppInfo.setOnClickListener {
+            Toast.makeText(this, "正在检查更新…", Toast.LENGTH_SHORT).show()
+            UpdateChecker.check(this)
+        }
     }
 
     override fun onResume() {
