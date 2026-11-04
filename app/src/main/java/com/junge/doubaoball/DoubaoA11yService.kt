@@ -41,6 +41,28 @@ class DoubaoA11yService : AccessibilityService() {
     /** 连续重试计数 */
     private var launchRetry = 0
 
+    /** 快捷方式启动流程的阶段：0=等桌面出现并找豆包图标 1=等长按菜单出现并点"打电话" */
+    @Volatile
+    private var shortcutStage = -1
+
+    /** 悬浮球单击唤醒入口：走「回桌面→长按豆包图标→点打电话」快捷方式路径 */
+    fun startCallViaShortcut() {
+        launchRetry = 0
+        shortcutStage = 0
+        performGlobalAction(GLOBAL_ACTION_HOME)
+        handler.removeCallbacks(shortcutTimeoutRunnable)
+        handler.postDelayed(shortcutTimeoutRunnable, 9000) // 全流程9秒超时保护
+    }
+
+    private val shortcutTimeoutRunnable = Runnable {
+        if (StateCenter.state == StateCenter.State.LAUNCHING) {
+            shortcutStage = -1
+            StateCenter.reset()
+            store.add("单击唤醒·快捷方式打电话", "失败：超时")
+            toast("操作超时，请重试")
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
@@ -57,91 +79,99 @@ class DoubaoA11yService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        // 只在"正在唤醒豆包"状态下，监听到豆包窗口出现时执行自动点击
-        val targetPkg = prefs.doubaoPkg ?: DOUBAO_PKG
-        if (StateCenter.state == StateCenter.State.LAUNCHING &&
-            event.packageName == targetPkg &&
-            (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
-                    event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)
-        ) {
-            // 界面刚加载，节点可能还没铺完，延迟一点再点
-            handler.removeCallbacks(autoClickCallRunnable)
-            handler.postDelayed(autoClickCallRunnable, 700)
-        }
-    }
-
-    private val autoClickCallRunnable = Runnable { tryClickCallButton() }
-
-    /** 尝试点击豆包里的"语音通话"按钮，失败自动重试，最后启用智能猜测 */
-    private fun tryClickCallButton() {
         if (StateCenter.state != StateCenter.State.LAUNCHING) return
-        launchRetry++
-        if (clickByFeature(prefs.customCallNode, callKeywords)) {
-            onCallClickSuccess()
-        } else if (launchRetry <= 5) {
-            handler.postDelayed(autoClickCallRunnable, 900)
-        } else if (launchRetry == 6 && smartFallbackClick()) {
-            // 关键词全没匹配上，智能猜测兜底（猜测结果自动记住，下次直接用）
-            onCallClickSuccess()
-        } else {
-            launchRetry = 0
-            StateCenter.reset()
-            store.add("单击唤醒·自动进入语音通话", "失败：没找到语音按钮")
-            toast("没找到豆包的语音按钮，打开外壳App点一次「一键自动校准」即可")
-        }
-    }
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+        ) return
+        // 排除本App自己的窗口干扰
+        if (event.packageName == packageName) return
 
-    private fun onCallClickSuccess() {
-        launchRetry = 0
-        StateCenter.set(StateCenter.State.IN_CALL)
-        store.add("单击唤醒·自动进入语音通话", "成功")
-        Prefs(this).totalCalls = Prefs(this).totalCalls + 1
-    }
-
-    /**
-     * 智能兜底：关键词都认不出按钮时，在屏幕底部区域找最像"语音图标"的可点击按钮
-     * （豆包的语音键一般在底部输入框附近，是个图标按钮）
-     * 猜中后自动把坐标特征记住，以后不再猜。
-     */
-    private fun smartFallbackClick(): Boolean {
-        val root = rootInActiveWindow ?: return false
-        try {
-            val screenH = resources.displayMetrics.heightPixels
-            val screenW = resources.displayMetrics.widthPixels
-            var best: AccessibilityNodeInfo? = null
-            var bestScore = -1
-            collectIconButtons(root, screenW, screenH) { node, score ->
-                if (score > bestScore) { bestScore = score; best = node }
+        when (shortcutStage) {
+            0 -> {
+                // 等桌面出现 → 找"豆包"图标并长按
+                handler.removeCallbacks(findIconRunnable)
+                handler.postDelayed(findIconRunnable, 450)
             }
-            val node = best ?: return false
-            val rect = Rect()
-            node.getBoundsInScreen(rect)
-            return tapAt(rect.centerX().toFloat(), rect.centerY().toFloat())
-        } finally {
-            root.recycle()
+            1 -> {
+                // 长按后等快捷菜单出现 → 点"打电话"
+                handler.removeCallbacks(clickMenuRunnable)
+                handler.postDelayed(clickMenuRunnable, 350)
+            }
         }
     }
 
-    /** 遍历底部1/3区域的可点击图标按钮并打分：越靠底部中央/右下、越接近正方形图标，分越高 */
-    private fun collectIconButtons(
-        node: AccessibilityNodeInfo, screenW: Int, screenH: Int,
-        onFound: (AccessibilityNodeInfo, Int) -> Unit
-    ) {
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
-        if (node.isClickable && rect.centerY() > screenH * 2 / 3 &&
-            rect.width() in 30..300 && rect.height() in 30..300
-        ) {
-            val ratio = rect.width().toFloat() / rect.height()
-            var score = 0
-            if (ratio in 0.6f..1.6f) score += 3            // 接近正方形→图标按钮
-            score += (rect.centerY() * 4 / screenH)        // 越靠底部越高分
-            if (rect.centerX() > screenW / 2) score += 2   // 豆包语音键偏右
-            onFound(node, score)
+    /** 阶段0：在桌面上找"豆包"图标 → 长按 */
+    private val findIconRunnable = Runnable {
+        if (shortcutStage != 0 || StateCenter.state != StateCenter.State.LAUNCHING) return@Runnable
+        val root = rootInActiveWindow ?: return@Runnable retryFindIcon()
+        val icon = findNode(root, "豆包", "豆包")
+        if (icon == null) {
+            root.recycle()
+            retryFindIcon()
+        } else {
+            // 长按图标弹出快捷方式菜单
+            var target: AccessibilityNodeInfo? = icon
+            while (target != null && !target.isLongClickable) target = target.parent
+            val ok = (target ?: icon).performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
+            root.recycle()
+            if (ok) {
+                shortcutStage = 1
+                launchRetry = 0
+            } else {
+                retryFindIcon()
+            }
         }
-        for (i in 0 until node.childCount) {
-            node.getChild(i)?.let { collectIconButtons(it, screenW, screenH, onFound) }
+    }
+
+    private fun retryFindIcon() {
+        launchRetry++
+        if (launchRetry <= 4) {
+            handler.postDelayed(findIconRunnable, 800)
+        } else {
+            finishLaunchFail("没找到桌面上的豆包图标", "请把豆包图标放到手机桌面当前屏，再单击悬浮球")
         }
+    }
+
+    /** 阶段1：在快捷菜单里点"打电话" */
+    private val clickMenuRunnable = Runnable {
+        if (shortcutStage != 1 || StateCenter.state != StateCenter.State.LAUNCHING) return@Runnable
+        val root = rootInActiveWindow ?: return@Runnable retryClickMenu()
+        val menu = findNode(root, "打电话", "打电话")
+        if (menu == null) {
+            root.recycle()
+            retryClickMenu()
+        } else {
+            val ok = clickNode(menu)
+            root.recycle()
+            if (ok) {
+                handler.removeCallbacks(shortcutTimeoutRunnable)
+                shortcutStage = -1
+                launchRetry = 0
+                StateCenter.set(StateCenter.State.IN_CALL)
+                store.add("单击唤醒·快捷方式打电话", "成功")
+                Prefs(this).totalCalls = Prefs(this).totalCalls + 1
+            } else {
+                retryClickMenu()
+            }
+        }
+    }
+
+    private fun retryClickMenu() {
+        launchRetry++
+        if (launchRetry <= 3) {
+            handler.postDelayed(clickMenuRunnable, 600)
+        } else {
+            finishLaunchFail("没找到「打电话」选项", "长按菜单里没看到打电话，请截图告诉我菜单内容")
+        }
+    }
+
+    private fun finishLaunchFail(result: String, tip: String) {
+        handler.removeCallbacks(shortcutTimeoutRunnable)
+        shortcutStage = -1
+        launchRetry = 0
+        StateCenter.reset()
+        store.add("单击唤醒·快捷方式打电话", "失败：$result")
+        toast(tip)
     }
 
     /** 外部调用：暂停通话 */

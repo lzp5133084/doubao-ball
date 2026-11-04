@@ -287,7 +287,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:lineSpacingMultiplier="1.4"
-                android:text="正常情况下完全不用管这里。万一豆包大改版、小球认不出语音按钮了，点下面按钮一次：它自己打开豆包、自己认出语音键并记住，全自动。"
+                android:text="正常情况下完全不用管这里。打电话走桌面快捷方式直达，很稳定。万一通话界面里的「暂停/挂断」键认不出了，点下面按钮自动校准。"
                 android:textColor="#9BA3B4"
                 android:textSize="12sp" />
 

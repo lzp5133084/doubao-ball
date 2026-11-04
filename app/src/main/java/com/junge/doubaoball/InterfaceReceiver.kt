@@ -20,7 +20,7 @@ class InterfaceReceiver : BroadcastReceiver() {
             "com.junge.doubaoball.ACTION_CALL_START" -> {
                 if (StateCenter.state == StateCenter.State.IDLE && a11y != null) {
                     StateCenter.set(StateCenter.State.LAUNCHING)
-                    if (!a11y.launchDoubao(context)) StateCenter.reset()
+                    a11y.startCallViaShortcut()
                 }
             }
             "com.junge.doubaoball.ACTION_CALL_END" -> {

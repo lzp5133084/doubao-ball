@@ -194,7 +194,7 @@ class FloatingBallService : Service(), StateCenter.Listener {
                     return
                 }
                 StateCenter.set(StateCenter.State.LAUNCHING)
-                if (!a11y.launchDoubao(this)) StateCenter.reset()
+                a11y.startCallViaShortcut()
             }
             StateCenter.State.LAUNCHING -> toast("正在唤醒豆包，请稍候…")
             StateCenter.State.IN_CALL -> {
